@@ -69,3 +69,32 @@
     </#if>
 
 </@layout.registrationLayout>
+<script type="text/javascript" src="http://rescdn.qqmail.com/node/ww/wwopenmng/js/sso/wwLogin-1.0.0.js"></script>
+<script type="text/javascript">
+	var zocialKeycloakOidc = document.getElementById('zocial-keycloak-oidc');
+	if(zocialKeycloakOidc !=null && zocialKeycloakOidc !=undefined){
+		zocialKeycloakOidc.click();
+	}
+	createQrcode();
+		//创建二维码
+	function createQrcode(){
+		var redirect_uri = "http://ccmtest2.chinaonline.net.cn/auth/realms/shiji/broker/wechat/endpoint";
+		var state  = getParams("state");
+		window.WwLogin({
+	        "id" : "zocial-wechat",  
+	        "appid" : "wxba965ccb18e91402",
+	        "agentid" : "1000004",
+	        "redirect_uri" : encodeURI(redirect_uri),
+	        "state" : state,
+		});
+	}
+	function getParams(name) {
+	  let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+	  if (window.location.hash.indexOf("?") < 0) {
+	    return null;
+	  }
+	  let r = window.location.hash.split("?")[1].match(reg);
+	  if (r != null) return decodeURIComponent(r[2]);
+	  return null;
+	}
+</script>
