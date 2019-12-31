@@ -93,17 +93,17 @@ public class WechatIdentityProvider  extends AbstractOAuth2IdentityProvider<Wech
 	@Override
 	protected BrokeredIdentityContext doGetFederatedIdentity(String accessToken_code) {
 		try {
-//			System.out.println("accessToken_code:"+accessToken_code);
+//			logger.info("accessToken_code:"+accessToken_code);
 //			JsonNode accessToken_codeJson = asJsonNode(accessToken_code);
 //			String accessToken = getJsonProperty(accessToken_codeJson,  getAccessTokenResponseParameter());
 //			String openid = getJsonProperty(accessToken_codeJson, "openid");
 //			
 //			String userIfoUrl = String.format(USERINFO_URL,accessToken,openid);
 //			JsonNode userIfo = SimpleHttp.doGet(userIfoUrl, session).asJson();
-//			System.out.println("userIfo:"+userIfo);
+//			logger.info("userIfo:"+userIfo);
 //			return extractUserInfo(userIfo);
 			
-			System.out.println("accessToken_code:"+accessToken_code);
+			logger.info("accessToken_code:"+accessToken_code);
 			JsonNode accessToken_codeJson = asJsonNode(accessToken_code);
 			String accessToken = getJsonProperty(accessToken_codeJson,  getAccessTokenResponseParameter());
 			String code = getJsonProperty(accessToken_codeJson, "code");
@@ -111,13 +111,13 @@ public class WechatIdentityProvider  extends AbstractOAuth2IdentityProvider<Wech
 			
 			String userIfoUrl = String.format(url,accessToken,code);
 			JsonNode userIfo = SimpleHttp.doGet(userIfoUrl, session).asJson();
-			System.out.println("userIfo:"+userIfo);
+			logger.info("userIfo:"+userIfo);
 			String errcode = getJsonProperty(userIfo, "errcode");
 			if("0".equals(errcode)){
 				String userId = getJsonProperty(userIfo, "UserId");
 				String userDetailUrl = String.format(USER_URL,accessToken,userId);
 				JsonNode profile = SimpleHttp.doGet(userDetailUrl, session).asJson();
-				System.out.println("profile:"+profile);
+				logger.info("profile:"+profile);
 				return extractUserInfo(profile);
 			}
 			return null;
@@ -195,7 +195,7 @@ public class WechatIdentityProvider  extends AbstractOAuth2IdentityProvider<Wech
 		            	}
 		            	codeSet.add(authorizationCode);
 		            	
-		            	System.out.println("authorizationCode:"+authorizationCode);
+		            	logger.info("authorizationCode:"+authorizationCode);
 		                if (authorizationCode != null) {
 		                	SimpleHttp response_SimpleHttp = generateTokenRequest(authorizationCode);
 		                	String response = response_SimpleHttp.asString();
@@ -204,7 +204,7 @@ public class WechatIdentityProvider  extends AbstractOAuth2IdentityProvider<Wech
 //		                	String openid = getJsonProperty(accessToken_codeJson, "openid");
 //		                	String accessToken_openid =  "{\""+getAccessTokenResponseParameter()+"\":\""+accessToken+"\",\"openid\":\""+openid+"\"}";
 		                    String accessToken_openid =  "{\""+getAccessTokenResponseParameter()+"\":\""+accessToken+"\",\"code\":\""+authorizationCode+"\"}";
-		                    System.out.println("accessToken_code:"+accessToken_openid);
+		                    logger.info("accessToken_code:"+accessToken_openid);
 		                    BrokeredIdentityContext federatedIdentity = getFederatedIdentity(accessToken_openid);
 		                    if(federatedIdentity==null){
 		                    	return callback.cancelled(state);
